@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from collections import Counter
 
 
 def mock_data(min_val=0, center=3., df=3, size=10000):
@@ -37,7 +36,13 @@ def get_center(x):
     mean = np.mean(x)
     media = np.median(x)
     mode = np.argmax(np.bincount(x))
+    from collections import Counter
+    c = Counter(x)
+    mode = sorted(c.keys(), key=lambda x:c[x])[-1]
     return mean, media, mode
+
+
+
 
 
 def get_center2(x):
