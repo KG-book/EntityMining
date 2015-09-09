@@ -1,14 +1,23 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+from scipy import stats
 
 
-def mock_data(min_val=0, center=3., df=3, size=10000):
-    p = np.random.chisquare(df=df, size=size) 
-    p = p * ((center-min_val) * 1. / df) + min_val
-    p = p.astype(int)
-    return p
+def height_weight_mock(min_height=145, mid_height=175, df=6, size=1000):
+    h = mock_data(min_val=min_height, center=mid_height, df=df, size=size)
+    h[h>220] = mid_height + int(np.random.normal(scale=5))
+    w = h - 105
+    w += np.random.normal(scale=w/5.)
+    return h, w
 
 
+def height_weight_file(save_path, size=1000):
+    h, w = height_weight_mock(size=size)
+    i = np.arange(1, size+1)
+    d = np.hstack((i.reshape(-1, 1), 
+                   h.reshape(-1, 1), 
+                   w.reshape(-1, 1)))
+    np.savetxt(save_path, d, fmt='%s')
 
 def savitzky_golay(y, window_size=100, order=3, deriv=0, rate=1):
     import numpy as np
@@ -70,16 +79,25 @@ def pdf(x, norm_flag=False, zoom=1.):
     #c = np.bincount(x)
     c = count_bitmap(x)
     if norm_flag:
-        c = c * 1. /sum(x)
-    return np.arange(x.min()+bias, x.max()+1+bias) * 1. / zoom, c    
-
+        c = c * 1. / len(x) 
+    #return np.arange(x.min()+bias, x.max()+1+bias) * 1. / zoom, c    
+    return np.arange(x.min(), x.max()+1) * 1. / zoom + bias, c    
 
 def cdf(x, norm_flag=False):
-    i, p = pdf(x, norm_flag)
-    return i, np.add.accumulate(p)
+    i, p = pdf(x, norm_flag=False)
+    cp = np.add.accumulate(p)
+    if norm_flag:
+        cp = cp * 1. / len(x)
+    return i, cp
     
 
 def pdf2(x, norm_flag=False, n_bins=20, zoom=1):
     i, p = pdf(x, norm_flag, zoom=zoom)
     return i, savitzky_golay(p, window_size=len(x)//n_bins)
     
+    
+def skewness(x):
+    return stats.moment(x, moment=3) / (np.std(x) ** 3)
+    
+def kurtosis(x):
+    return stats.moment(x, moment=4) / (np.var(x) ** 2) - 3
