@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+from scipy import stats
 
-
-def mock_data(min_val=0, center=3., df=3, size=10000):
-    p = np.random.chisquare(df=df, size=size) 
-    p = p * ((center-min_val) * 1. / df) + min_val
-    p = p.astype(int)
-    return p
 
 
 
@@ -70,16 +65,27 @@ def pdf(x, norm_flag=False, zoom=1.):
     #c = np.bincount(x)
     c = count_bitmap(x)
     if norm_flag:
-        c = c * 1. /sum(x)
-    return np.arange(x.min()+bias, x.max()+1+bias) * 1. / zoom, c    
-
+#        c = c * (x.max() - x.min()) * 1. / len(x) 
+        c = c * zoom * 1. / len(x) 
+    #return np.arange(x.min()+bias, x.max()+1+bias) * 1. / zoom, c    
+    return np.arange(x.min(), x.max()+1) * 1. / zoom + bias, c     
 
 def cdf(x, norm_flag=False):
-    i, p = pdf(x, norm_flag)
-    return i, np.add.accumulate(p)
+    i, p = pdf(x, norm_flag=False)
+    cp = np.add.accumulate(p)
+    if norm_flag:
+        cp = cp * 1. / len(x)
+    return i, cp
     
 
 def pdf2(x, norm_flag=False, n_bins=20, zoom=1):
     i, p = pdf(x, norm_flag, zoom=zoom)
-    return i, savitzky_golay(p, window_size=len(x)//n_bins)
+    xp = savitzky_golay(p, window_size=len(p)//n_bins)
+    xp[xp < 0] = 0
+    return i, xp
     
+def skewness(x):
+    return stats.moment(x, moment=3) / (np.std(x) ** 3)
+    
+def kurtosis(x):
+    return stats.moment(x, moment=4) / (np.var(x) ** 2) - 3
